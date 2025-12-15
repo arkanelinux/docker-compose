@@ -1,0 +1,62 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:13
+    restart: always
+    mem_limit: 500M
+    cpus: 1.0
+    environment:
+      USER_UID: 1000
+      USER_GID: 1000
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: 'forgejo_psql:5432'
+      FORGEJO__database__NAME: 'CHANGEME'
+      FORGEJO__database__USER: 'CHANGEME'
+      FORGEJO__database__PASSWD: 'CHANGEME'
+    volumes:
+      - /mnt/mass/forgejo/forgejo:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - forgejo_psql
+    networks:
+      - forgejo
+      - forgejo-db
+
+  forgejo_psql:
+    image: postgres:14
+    restart: always
+    mem_limit: 500M
+    cpus: 1.0
+    environment:
+      POSTGRES_USER: 'CHANGEME'
+      POSTGRES_PASSWORD: 'CHANGEME'
+      POSTGRES_DB: 'CHANGEME'
+    networks:
+      - forgejo-db
+    volumes:
+      - /mnt/mass/forgejo/postgres:/var/lib/postgresql/data
+
+  forgejo_anubis:
+    image: ghcr.io/techarohq/anubis:latest
+    labels:
+      - "traefik.http.routers.forgejo-anubis.rule=Host(`git.arkanelinux.org`)"
+      - "traefik.http.routers.forgejo-anubis.tls=true"
+      - "traefik.http.routers.forgejo-anubis.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.forgejo-anubis.middlewares=secure,compress"
+      - "traefik.http.services.forgejo-anubis.loadbalancer.server.port=8080"
+    restart: always
+    environment:
+      BIND: ":8080"
+      DIFFICULTY: "4"
+      METRICS_BIND: ":9090"
+      SERVE_ROBOTS_TXT: "true"
+      TARGET: "http://forgejo:3000"
+    networks:
+      - forgejo
+
+networks:
+  forgejo:
+    external: true
+  forgejo-db:
+    internal: true
+    name: forgejo-db

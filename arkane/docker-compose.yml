@@ -1,0 +1,76 @@
+services:
+  arkanerepo:
+    image: httpd:latest
+    restart: always
+    mem_limit: 1G
+    read_only: true
+    cpus: 2.0
+    labels:
+      - "traefik.http.routers.arkanerepo.rule=Host(`repo.arkanelinux.org`)"
+      - "traefik.http.routers.arkanerepo.tls=true"
+      - "traefik.http.routers.arkanerepo.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.arkanerepo.middlewares=secure,csp_secure"
+      - "traefik.http.services.arkanerepo.loadbalancer.server.port=80"
+    networks:
+      - sites
+    volumes:
+      - /mnt/mass/repo:/usr/local/apache2/htdocs:ro
+    tmpfs:
+      - /usr/local/apache2/logs
+
+  arkanewebsite:
+    build: arkanelinux.org
+    labels:
+      - "traefik.http.routers.arkanewebsite.rule=Host(`arkanelinux.org`)"
+      - "traefik.http.routers.arkanewebsite.tls=true"
+      - "traefik.http.routers.arkanewebsite.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.arkanewebsite.middlewares=secure,compress"
+      - "traefik.http.services.arkanewebsite.loadbalancer.server.port=80"
+    restart: always
+    mem_limit: 200M
+    read_only: true
+    cpus: 2.0
+    networks:
+      - sites
+    tmpfs:
+      - /usr/local/apache2/logs
+
+  docsarkanewebsite:
+    build: docs.arkanelinux.org
+    labels:
+      - "traefik.http.routers.docsarkane.rule=Host(`docs.arkanelinux.org`)"
+      - "traefik.http.routers.docsarkane.tls=true"
+      - "traefik.http.routers.docsarkane.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.docsarkane.middlewares=secure,compress"
+      - "traefik.http.services.docsarkane.loadbalancer.server.port=80"
+    mem_limit: 200M
+    read_only: true
+    cpus: 2.0
+    restart: always
+    networks:
+      - sites
+    tmpfs:
+      - /usr/local/apache2/logs
+
+  arkanedownload:
+    image: httpd:latest
+    restart: always
+    mem_limit: 1G
+    read_only: true
+    cpus: 2.0
+    labels:
+      - "traefik.http.routers.arkanedownload.rule=Host(`download.arkanelinux.org`)"
+      - "traefik.http.routers.arkanedownload.tls=true"
+      - "traefik.http.routers.arkanedownload.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.arkanedownload.middlewares=secure,csp_secure"
+      - "traefik.http.services.arkanedownload.loadbalancer.server.port=80"
+    networks:
+      - sites
+    volumes:
+      - /mnt/mass/download:/usr/local/apache2/htdocs:ro
+    tmpfs:
+      - /usr/local/apache2/logs
+
+networks:
+  sites:
+    external: true

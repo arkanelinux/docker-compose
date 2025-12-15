@@ -1,0 +1,26 @@
+services:
+  jenkins:
+    image: docker.io/jenkins/jenkins:jdk21
+    labels:
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.arkanelinux.org`)"
+      - "traefik.http.routers.jenkins.tls=true"
+      - "traefik.http.routers.jenkins.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.jenkins.middlewares=compress"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+    mem_limit: 1G
+    read_only: true
+    cpus: 1.0
+    networks:
+      - jenkins
+    ports:
+      - 50000:50000
+      - 2222:22
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /root/.ssh/known_hosts:/var/jenkins_home/.ssh/known_hosts:ro
+    tmpfs:
+      - /tmp
+
+networks:
+  jenkins:
+    external: true
